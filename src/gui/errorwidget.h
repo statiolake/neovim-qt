@@ -21,7 +21,7 @@ signals:
 private:
 	QLabel *m_errorLabel;
 	QSvgWidget *m_image;
-	QPushButton *m_closeButton;
+	// QPushButton *m_closeButton;
 };
 
 } // Namespace
