@@ -108,7 +108,7 @@ QString convertMouse(
 	Qt::MouseButton bt,
 	QEvent::Type type,
 	Qt::KeyboardModifiers mod,
-	QPoint pos,
+	QPointF pos,
 	uint8_t clickCount) noexcept
 {
 	const QVariant varButtonName{ GetButtonName(bt, clickCount) };

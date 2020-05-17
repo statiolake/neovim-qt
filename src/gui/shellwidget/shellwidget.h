@@ -13,7 +13,7 @@ class ShellWidget: public QWidget
 	Q_PROPERTY(QColor foreground READ foreground WRITE setForeground)
 	Q_PROPERTY(int rows READ rows)
 	Q_PROPERTY(int columns READ columns)
-	Q_PROPERTY(QSize cellSize READ cellSize)
+	Q_PROPERTY(QSizeF cellSize READ cellSize)
 public:
 	ShellWidget(QWidget *parent=0);
 
@@ -35,7 +35,7 @@ public:
 
 	int rows() const;
 	int columns() const;
-	QSize cellSize() const;
+	QSizeF cellSize() const;
 	const ShellContents& contents() const;
 	QSize sizeHint() const Q_DECL_OVERRIDE;
 
@@ -109,16 +109,16 @@ public slots:
 	void setLineSpace(int height);
 protected:
 	/// Cursor position in shell coordinates
-	QPoint m_cursor_pos;
+	QPointF m_cursor_pos;
 
 	/// Abstraction for guicursor options and styles
 	Cursor m_cursor;
 
 	/// The top left corner position (pixel) for the cursor
-	QPoint neovimCursorTopLeft() const noexcept;
+	QPointF neovimCursorTopLeft() const noexcept;
 
 	/// Get the area filled by the cursor
-	QRect neovimCursorRect() const noexcept;
+	QRectF neovimCursorRect() const noexcept;
 
 	std::vector<QFont> m_guifontwidelist;
 
@@ -129,7 +129,7 @@ protected:
 	virtual void resizeEvent(QResizeEvent *ev) Q_DECL_OVERRIDE;
 
 	void setCellSize();
-	QRect absoluteShellRect(int row0, int col0, int rowcount, int colcount);
+	QRectF absoluteShellRect(int row0, int col0, int rowcount, int colcount);
 
 	void setGuiFontList(const std::vector<QFont>&& fontList) noexcept
 	{
@@ -139,13 +139,13 @@ protected:
 private:
 	void setFont(const QFont&);
 	void handleCursorChanged();
-	QRect getNeovimCursorRect(QRect cellRect) noexcept;
-	void paintNeovimCursorBackground(QPainter& p, QRect cellRect) noexcept;
-	void paintNeovimCursorForeground(QPainter& p, QRect cellRect, QPoint pos, QChar character) noexcept;
+	QRectF getNeovimCursorRect(QRectF cellRect) noexcept;
+	void paintNeovimCursorBackground(QPainter& p, QRectF cellRect) noexcept;
+	void paintNeovimCursorForeground(QPainter& p, QRectF cellRect, QPointF pos, QChar character) noexcept;
 	QFont GetCellFont(const Cell& cell) const noexcept;
 
 	ShellContents m_contents{ 0, 0 };
-	QSize m_cellSize;
+	QSizeF m_cellSize;
 	int m_ascent;
 	QColor m_bgColor{ Qt::white };
 	QColor m_fgColor{ Qt::black };

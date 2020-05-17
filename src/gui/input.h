@@ -3,7 +3,7 @@
 #include <QEvent>
 #include <QKeyEvent>
 #include <QMap>
-#include <QPoint>
+#include <QPointF>
 #include <QString>
 
 namespace NeovimQt { namespace Input {
@@ -33,7 +33,7 @@ QString convertMouse(
 	Qt::MouseButton bt,
 	QEvent::Type type,
 	Qt::KeyboardModifiers mod,
-	QPoint pos,
+	QPointF pos,
 	uint8_t clicksCount) noexcept;
 
 /// Platform specific Qt key modifier bitmask for 'Control'.

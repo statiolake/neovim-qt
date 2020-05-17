@@ -48,7 +48,7 @@ class Shell: public ShellWidget
 public:
 	Shell(NeovimConnector *nvim, ShellOptions opts, QWidget *parent=0);
 	~Shell();
-	QSize sizeIncrement() const;
+	QSizeF sizeIncrement() const;
 	static QColor color(qint64 color, const QColor& fallback=QColor());
 	virtual QVariant inputMethodQuery(Qt::InputMethodQuery) const Q_DECL_OVERRIDE;
 	bool neovimBusy() const;
@@ -81,7 +81,7 @@ signals:
 
 public slots:
 	void handleNeovimNotification(const QByteArray &name, const QVariantList& args);
-	void resizeNeovim(const QSize&);
+	void resizeNeovim(const QSizeF&);
 	void resizeNeovim(int n_cols, int n_rows);
 	bool setGuiFont(const QString& fdesc, bool force, bool updateOption);
 	bool setGuiFontWide(const QString& fdesc) noexcept;
@@ -163,7 +163,7 @@ private:
 
 	QList<QUrl> m_deferredOpen;
 
-	QRect m_scroll_region;
+	QRectF m_scroll_region;
 	bool m_font_bold{ false };
 	bool m_font_italic{ false };
 	bool m_font_underline{ false };
@@ -183,9 +183,9 @@ private:
 	QVariantList m_modeInfo;
 
 	bool m_resizing{ false };
-	QSize m_resize_neovim_pending;
+	QSizeF m_resize_neovim_pending;
 	QLabel* m_tooltip{ nullptr };
-	QPoint m_mouse_pos;
+	QPointF m_mouse_pos;
 	// 2/3/4 mouse click tracking
 	QTimer m_mouseclick_timer;
 	uint8_t m_mouseclick_count{ 0 };

@@ -25,8 +25,8 @@ QSize PopupMenu::sizeHint() const {
 	for (int i=0; i<model()->rowCount(); i++) {
 		height += sizeHintForRow(i);
 	}
-	return QSize(sizeHintForColumn(0) + 2*frameWidth(),
-			height + 2*frameWidth());
+	return QSizeF(sizeHintForColumn(0) + 2*frameWidth(),
+			height + 2*frameWidth()).toSize();
 }
 
 void PopupMenu::setAnchor(int64_t row, int64_t col)
@@ -54,7 +54,7 @@ void PopupMenu::updateGeometry()
 
 void PopupMenu::setGeometry(int64_t row, int64_t col)
 {
-	const QSize sizeHintContent = sizeHint();
+	const QSizeF sizeHintContent = sizeHint();
 
 	if (!m_parentShellWidget) {
 		const int width = sizeHintContent.width();
@@ -64,9 +64,9 @@ void PopupMenu::setGeometry(int64_t row, int64_t col)
 		return QListView::setGeometry(0, 0, width, height);
 	}
 
-	const int cell_width = m_parentShellWidget->cellSize().width();
-	const int min_width = 20 * cell_width;
-	const int total_width = m_parentShellWidget->columns() * cell_width;
+	const qreal cell_width = m_parentShellWidget->cellSize().width();
+	const qreal min_width = 20 * cell_width;
+	const qreal total_width = m_parentShellWidget->columns() * cell_width;
 
 	// Compute default width properties (anchor_x, width)
 	int width = sizeHintContent.width();

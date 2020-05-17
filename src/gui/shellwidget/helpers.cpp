@@ -23,7 +23,7 @@ bool saveShellContents(const ShellContents& s, const QString& filename)
 		p.setPen(Qt::red);
 		p.drawLine(0, i*h, img.width(), i*h);
 		for (int j=0; j<s.columns(); j++) {
-			QRect r(j*w, i*h, w, h);
+			QRectF r(j*w, i*h, w, h);
 			const Cell& cell = s.constValue(i,j);
 			p.setPen(cell.GetForegroundColor());
 			if (cell.GetBackgroundColor().isValid()) {

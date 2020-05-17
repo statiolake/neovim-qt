@@ -102,18 +102,18 @@ void ShellWidget::setCellSize()
 {
 	QFontMetrics fm(font());
 	m_ascent = fm.ascent();
-	m_cellSize = QSize(fm.width('W'),
+	m_cellSize = QSizeF(fm.width('W'),
 			qMax(fm.lineSpacing(), fm.height()) + m_lineSpace);
-	setSizeIncrement(m_cellSize);
+	// setSizeIncrement(m_cellSize);
 }
-QSize ShellWidget::cellSize() const
+QSizeF ShellWidget::cellSize() const
 {
 	return m_cellSize;
 }
 
-QRect ShellWidget::getNeovimCursorRect(QRect cellRect) noexcept
+QRectF ShellWidget::getNeovimCursorRect(QRectF cellRect) noexcept
 {
-	QRect cursorRect{ cellRect };
+	QRectF cursorRect{ cellRect };
 	switch (m_cursor.GetShape())
 	{
 		case Cursor::Shape::Block:
@@ -121,8 +121,8 @@ QRect ShellWidget::getNeovimCursorRect(QRect cellRect) noexcept
 
 		case Cursor::Shape::Horizontal:
 		{
-			const int height{ cursorRect.height() * m_cursor.GetPercentage() / 100 };
-			const int verticalOffset{ cursorRect.height() - height };
+			const qreal height{ cursorRect.height() * m_cursor.GetPercentage() / 100 };
+			const qreal verticalOffset{ cursorRect.height() - height };
 			cursorRect.adjust(0, verticalOffset, 0, verticalOffset);
 			cursorRect.setHeight(height);
 		}
@@ -138,9 +138,9 @@ QRect ShellWidget::getNeovimCursorRect(QRect cellRect) noexcept
 	return cursorRect;
 }
 
-void ShellWidget::paintNeovimCursorBackground(QPainter& p, QRect cellRect) noexcept
+void ShellWidget::paintNeovimCursorBackground(QPainter& p, QRectF cellRect) noexcept
 {
-	const QRect cursorRect{ getNeovimCursorRect(cellRect) };
+	const QRectF cursorRect{ getNeovimCursorRect(cellRect) };
 
 	QColor cursorBackgroundColor{ m_cursor.GetBackgroundColor() };
 	if (!cursorBackgroundColor.isValid()) {
@@ -151,7 +151,7 @@ void ShellWidget::paintNeovimCursorBackground(QPainter& p, QRect cellRect) noexc
 
 	// If the window does not have focus, draw an outline around the cursor cell.
 	if (!hasFocus()) {
-		QRect noFocusCursorRect{ cellRect };
+		QRectF noFocusCursorRect{ cellRect };
 		noFocusCursorRect.adjust(-1, -1, -1, -1);
 
 		QPen pen{ cursorBackgroundColor };
@@ -167,8 +167,8 @@ void ShellWidget::paintNeovimCursorBackground(QPainter& p, QRect cellRect) noexc
 
 void ShellWidget::paintNeovimCursorForeground(
 	QPainter& p,
-	QRect cellRect,
-	QPoint pos,
+	QRectF cellRect,
+	QPointF pos,
 	QChar character) noexcept
 {
 	// No focus: cursor is outline with default foreground color.
@@ -176,7 +176,7 @@ void ShellWidget::paintNeovimCursorForeground(
 		return;
 	}
 
-	const QRect cursorRect{ getNeovimCursorRect(cellRect) };
+	const QRectF cursorRect{ getNeovimCursorRect(cellRect) };
 
 	QColor cursorForegroundColor{ m_cursor.GetForegroundColor() };
 	if (!cursorForegroundColor.isValid()) {
@@ -242,7 +242,7 @@ void ShellWidget::paintEvent(QPaintEvent *ev)
 
 	p.setClipping(true);
 
-	foreach(QRect rect, ev->region().rects()) {
+	foreach(QRectF rect, ev->region().rects()) {
 		int start_row = rect.top() / m_cellSize.height();
 		int end_row = rect.bottom() / m_cellSize.height();
 		int start_col = rect.left() / m_cellSize.width();
@@ -262,10 +262,10 @@ void ShellWidget::paintEvent(QPaintEvent *ev)
 
 				const Cell& cell = m_contents.constValue(i,j);
 				int chars = cell.IsDoubleWidth() ? 2 : 1;
-				QRect r = absoluteShellRect(i, j, 1, chars);
-				QRect ovflw = absoluteShellRect(i, j, 1, chars + 1);
+				QRectF r = absoluteShellRect(i, j, 1, chars);
+				QRectF ovflw = absoluteShellRect(i, j, 1, chars + 1);
 
-				p.setClipRegion(ovflw);
+				p.setClipRect(ovflw);
 
 				if (j <= 0 || !contents().constValue(i, j-1).IsDoubleWidth()) {
 					// Only paint bg/fg if this is not the second cell
@@ -276,7 +276,7 @@ void ShellWidget::paintEvent(QPaintEvent *ev)
 					}
 					p.fillRect(r, bgColor);
 
-					const QPoint curPos{ j, i };
+					const QPointF curPos{ static_cast<qreal>(j), static_cast<qreal>(i) };
 					const bool isCursorVisibleAtCell{ m_cursor.IsVisible() && m_cursor_pos == curPos };
 
 					if (isCursorVisibleAtCell) {
@@ -293,7 +293,7 @@ void ShellWidget::paintEvent(QPaintEvent *ev)
 
 						// Draw chars at the baseline
 						const int cellTextOffset{ m_ascent + (m_lineSpace / 2) };
-						const QPoint pos{ r.left(), r.top() + cellTextOffset};
+						const QPointF pos{ r.left(), r.top() + cellTextOffset};
 						const uint character{ cell.GetCharacter() };
 
 						p.drawText(pos, QString::fromUcs4(&character, 1));
@@ -326,8 +326,8 @@ void ShellWidget::paintEvent(QPaintEvent *ev)
 					}
 
 					p.setPen(pen);
-					QPoint start = r.bottomLeft();
-					QPoint end = r.bottomRight();
+					QPointF start = r.bottomLeft();
+					QPointF end = r.bottomRight();
 					start.ry()--; end.ry()--;
 					if (cell.IsUnderline()) {
 						p.drawLine(start, end);
@@ -336,7 +336,7 @@ void ShellWidget::paintEvent(QPaintEvent *ev)
 						QPainterPath path(start);
 						for (int i = start.x() + 1; i <= end.x(); i++) {
 							int offset = val[i % 8];
-							path.lineTo(QPoint(i, start.y() - offset));
+							path.lineTo(QPointF(i, start.y() - offset));
 						}
 						p.drawPath(path);
 					}
@@ -347,9 +347,9 @@ void ShellWidget::paintEvent(QPaintEvent *ev)
 
 	p.setClipping(false);
 
-	QRect shellArea = absoluteShellRect(0, 0,
+	QRectF shellArea = absoluteShellRect(0, 0,
 				m_contents.rows(), m_contents.columns());
-	QRegion margins = QRegion(rect()).subtracted(shellArea);
+	QRegion margins = QRegion(rect()).subtracted(shellArea.toAlignedRect());
 	foreach(QRect margin, margins.intersected(ev->region()).rects()) {
 		p.fillRect(margin, background());
 	}
@@ -377,8 +377,8 @@ void ShellWidget::resizeEvent(QResizeEvent *ev)
 
 QSize ShellWidget::sizeHint() const
 {
-	return QSize(m_cellSize.width()*m_contents.columns(),
-				m_cellSize.height()*m_contents.rows());
+	return QSizeF(m_cellSize.width()*m_contents.columns(),
+				m_cellSize.height()*m_contents.rows()).toSize();
 }
 
 void ShellWidget::resizeShell(int n_rows, int n_columns)
@@ -485,8 +485,8 @@ int ShellWidget::put(
 {
 	int cols_changed = m_contents.put(text, row, column, hl_attr);
 	if (cols_changed > 0) {
-		QRect rect = absoluteShellRect(row, column, 1, cols_changed);
-		update(rect);
+		QRectF rect = absoluteShellRect(row, column, 1, cols_changed);
+		update(rect.toAlignedRect());
 	}
 	return cols_changed;
 }
@@ -494,8 +494,8 @@ int ShellWidget::put(
 void ShellWidget::clearRow(int row)
 {
 	m_contents.clearRow(row);
-	QRect rect = absoluteShellRect(row, 0, 1, m_contents.columns());
-	update(rect);
+	QRectF rect = absoluteShellRect(row, 0, 1, m_contents.columns());
+	update(rect.toAlignedRect());
 }
 void ShellWidget::clearShell(QColor bg)
 {
@@ -508,7 +508,7 @@ void ShellWidget::clearRegion(int row0, int col0, int row1, int col1)
 {
 	m_contents.clearRegion(row0, col0, row1, col1);
 	// FIXME: check offset error
-	update(absoluteShellRect(row0, col0, row1-row0, col1-col0));
+	update(absoluteShellRect(row0, col0, row1-row0, col1-col0).toAlignedRect());
 }
 
 /// Scroll count rows (positive numbers move content up)
@@ -527,17 +527,17 @@ void ShellWidget::scrollShellRegion(int row0, int row1, int col0,
 	if (rows != 0) {
 		m_contents.scrollRegion(row0, row1, col0, col1, rows);
 		// Qt's delta uses positive numbers to move down
-		QRect r = absoluteShellRect(row0, col0, row1-row0, col1-col0);
-		scroll(0, -rows*m_cellSize.height(), r);
+		QRectF r = absoluteShellRect(row0, col0, row1-row0, col1-col0);
+		scroll(0, -rows*m_cellSize.height(), r.toAlignedRect());
 	}
 }
 
 /// Convert Area in row/col coordinates into pixel coordinates
 ///
 /// (row0, col0) is the start position and rowcount/colcount the size
-QRect ShellWidget::absoluteShellRect(int row0, int col0, int rowcount, int colcount)
+QRectF ShellWidget::absoluteShellRect(int row0, int col0, int rowcount, int colcount)
 {
-	return QRect(col0*m_cellSize.width(), row0*m_cellSize.height(),
+	return QRectF(col0*m_cellSize.width(), row0*m_cellSize.height(),
 			colcount*m_cellSize.width(), rowcount*m_cellSize.height());
 }
 
@@ -554,28 +554,28 @@ int ShellWidget::columns() const
 void ShellWidget::setNeovimCursor(uint64_t row, uint64_t col) noexcept
 {
 	// Clear the stale cursor
-	update(neovimCursorRect());
+	update(neovimCursorRect().toAlignedRect());
 
 	// Update cursor position, draw at new location
-	m_cursor_pos = QPoint(col, row);
+	m_cursor_pos = QPointF(col, row);
 	m_cursor.ResetTimer();
-	update(neovimCursorRect());
+	update(neovimCursorRect().toAlignedRect());
 }
 
 /// The top left corner position (pixel) for the cursor
-QPoint ShellWidget::neovimCursorTopLeft() const noexcept
+QPointF ShellWidget::neovimCursorTopLeft() const noexcept
 {
-	const QSize cSize{ cellSize() };
-	const int xPixels{ m_cursor_pos.x() * cSize.width() };
-	const int yPixels{ m_cursor_pos.y() * cSize.height() };
+	const QSizeF cSize{ cellSize() };
+	const qreal xPixels{ m_cursor_pos.x() * cSize.width() };
+	const qreal yPixels{ m_cursor_pos.y() * cSize.height() };
 
 	return { xPixels, yPixels };
 }
 
 /// Get the area filled by the cursor
-QRect ShellWidget::neovimCursorRect() const noexcept
+QRectF ShellWidget::neovimCursorRect() const noexcept
 {
-	QRect cursor{ neovimCursorTopLeft(), cellSize() };
+	QRectF cursor{ neovimCursorTopLeft(), cellSize() };
 
 	const Cell& cell{ contents().constValue(m_cursor_pos.y(), m_cursor_pos.x()) };
 	if (cell.IsDoubleWidth()) {
@@ -587,7 +587,7 @@ QRect ShellWidget::neovimCursorRect() const noexcept
 
 void ShellWidget::handleCursorChanged()
 {
-	update(neovimCursorRect());
+	update(neovimCursorRect().toAlignedRect());
 }
 
 QString ShellWidget::fontDesc() const noexcept
