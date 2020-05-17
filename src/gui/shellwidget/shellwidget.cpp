@@ -105,18 +105,18 @@ void ShellWidget::setCellSize()
 {
 	QFontMetrics fm(font());
 	m_ascent = fm.ascent();
-	m_cellSize = QSize(GetHorizontalAdvance(fm, 'W'),
+	m_cellSize = QSizeF(GetHorizontalAdvance(fm, 'W'),
 			qMax(fm.lineSpacing(), fm.height()) + m_lineSpace);
-	setSizeIncrement(m_cellSize);
+	// setSizeIncrement(m_cellSize);
 }
-QSize ShellWidget::cellSize() const
+QSizeF ShellWidget::cellSize() const
 {
 	return m_cellSize;
 }
 
-QRect ShellWidget::getNeovimCursorRect(QRect cellRect) noexcept
+QRectF ShellWidget::getNeovimCursorRect(QRectF cellRect) noexcept
 {
-	QRect cursorRect{ cellRect };
+	QRectF cursorRect{ cellRect };
 	switch (m_cursor.GetShape())
 	{
 		case Cursor::Shape::Block:
@@ -124,8 +124,8 @@ QRect ShellWidget::getNeovimCursorRect(QRect cellRect) noexcept
 
 		case Cursor::Shape::Horizontal:
 		{
-			const int height{ cursorRect.height() * m_cursor.GetPercentage() / 100 };
-			const int verticalOffset{ cursorRect.height() - height };
+			const qreal height{ cursorRect.height() * m_cursor.GetPercentage() / 100 };
+			const qreal verticalOffset{ cursorRect.height() - height };
 			cursorRect.adjust(0, verticalOffset, 0, verticalOffset);
 			cursorRect.setHeight(height);
 		}
@@ -141,9 +141,9 @@ QRect ShellWidget::getNeovimCursorRect(QRect cellRect) noexcept
 	return cursorRect;
 }
 
-void ShellWidget::paintNeovimCursorBackground(QPainter& p, QRect cellRect) noexcept
+void ShellWidget::paintNeovimCursorBackground(QPainter& p, QRectF cellRect) noexcept
 {
-	const QRect cursorRect{ getNeovimCursorRect(cellRect) };
+	const QRectF cursorRect{ getNeovimCursorRect(cellRect) };
 
 	QColor cursorBackgroundColor{ m_cursor.GetBackgroundColor() };
 	if (!cursorBackgroundColor.isValid()) {
@@ -154,7 +154,7 @@ void ShellWidget::paintNeovimCursorBackground(QPainter& p, QRect cellRect) noexc
 
 	// If the window does not have focus, draw an outline around the cursor cell.
 	if (!hasFocus()) {
-		QRect noFocusCursorRect{ cellRect };
+		QRectF noFocusCursorRect{ cellRect };
 		noFocusCursorRect.adjust(-1, -1, -1, -1);
 
 		QPen pen{ cursorBackgroundColor };
@@ -170,8 +170,8 @@ void ShellWidget::paintNeovimCursorBackground(QPainter& p, QRect cellRect) noexc
 
 void ShellWidget::paintNeovimCursorForeground(
 	QPainter& p,
-	QRect cellRect,
-	QPoint pos,
+	QRectF cellRect,
+	QPointF pos,
 	const QString& character) noexcept
 {
 	// No focus: cursor is outline with default foreground color.
@@ -179,7 +179,7 @@ void ShellWidget::paintNeovimCursorForeground(
 		return;
 	}
 
-	const QRect cursorRect{ getNeovimCursorRect(cellRect) };
+	const QRectF cursorRect{ getNeovimCursorRect(cellRect) };
 
 	QColor cursorForegroundColor{ m_cursor.GetForegroundColor() };
 	if (!cursorForegroundColor.isValid()) {
@@ -204,13 +204,13 @@ void ShellWidget::paintNeovimCursorForeground(
 	p.setClipping(oldClippingSetting);
 }
 
-static QLine GetUnderline(QRect cellRect) noexcept
+static QLineF GetUnderline(QRectF cellRect) noexcept
 {
-	QPoint start{ cellRect.bottomLeft() };
-	start.ry()--;
+	QPointF start{ cellRect.bottomLeft() };
+	start.ry() -= 1.0;
 
-	QPoint end{ cellRect.bottomRight() };
-	end.ry()--;
+	QPointF end{ cellRect.bottomRight() };
+	end.ry() -= 1.0;
 
 	return { start, end };
 }
@@ -218,7 +218,7 @@ static QLine GetUnderline(QRect cellRect) noexcept
 void ShellWidget::paintUnderline(
 	QPainter& p,
 	const Cell& cell,
-	QRect cellRect) noexcept
+	QRectF cellRect) noexcept
 {
 	if (!cell.IsUnderline()) {
 		return;
@@ -236,16 +236,16 @@ void ShellWidget::paintUnderline(
 	p.drawLine(GetUnderline(cellRect));
 }
 
-static QPainterPath GetUndercurlPath(QRect cellRect) noexcept
+static QPainterPath GetUndercurlPath(QRectF cellRect) noexcept
 {
-	const QLine underline{ GetUnderline(cellRect) };
-	const QPoint& start{ underline.p1() };
-	const QPoint& end{ underline.p2() };
+	const QLineF underline{ GetUnderline(cellRect) };
+	const QPointF& start{ underline.p1() };
+	const QPointF& end{ underline.p2() };
 
 	QPainterPath path(start);
 	static constexpr int offset[8]{ 1, 0, 0, 1, 1, 2, 2, 2 };
 	for (int i = start.x() + 1; i <= end.x(); i++) {
-		path.lineTo(QPoint(i, start.y() - offset[i%8]));
+		path.lineTo(QPointF(i, start.y() - offset[i%8]));
 	}
 
 	return path;
@@ -254,7 +254,7 @@ static QPainterPath GetUndercurlPath(QRect cellRect) noexcept
 void ShellWidget::paintUndercurl(
 	QPainter& p,
 	const Cell& cell,
-	QRect cellRect) noexcept
+	QRectF cellRect) noexcept
 {
 	if (!cell.IsUndercurl()) {
 		return;
@@ -279,7 +279,7 @@ void ShellWidget::paintUndercurl(
 void ShellWidget::paintBackgroundClearCell(
 	QPainter& p,
 	const Cell& cell,
-	QRect cellRect,
+	QRectF cellRect,
 	bool isCursorCell) noexcept
 {
 	QColor bgColor{ cell.GetBackgroundColor() };
@@ -333,7 +333,7 @@ QFont ShellWidget::GetCellFont(const Cell& cell) const noexcept
 void ShellWidget::paintForegroundCellText(
 	QPainter& p,
 	const Cell& cell,
-	QRect cellRect,
+	QRectF cellRect,
 	bool isCursorCell) noexcept
 {
 	if (cell.GetCharacter() == ' ') {
@@ -349,7 +349,7 @@ void ShellWidget::paintForegroundCellText(
 
 	// Draw chars at the baseline
 	const int cellTextOffset{ m_ascent + (m_lineSpace / 2) };
-	const QPoint pos{ cellRect.left(), cellRect.top() + cellTextOffset};
+	const QPointF pos{ cellRect.left(), cellRect.top() + cellTextOffset};
 	const uint character{ cell.GetCharacter() };
 	const QString text{ QString::fromUcs4(&character, 1) };
 
@@ -436,7 +436,7 @@ static QVector<uint32_t> RemoveLigaturesUnderCursor(
 void ShellWidget::paintForegroundTextBlock(
 	QPainter& p,
 	const Cell& cell,
-	QRect blockRect,
+	QRectF blockRect,
 	const QString& text,
 	int cursorPos) noexcept
 {
@@ -451,7 +451,7 @@ void ShellWidget::paintForegroundTextBlock(
 	p.setFont(blockFont);
 
 	const int cellTextOffset{ m_lineSpace / 2 };
-	const QPoint pos{ blockRect.left(), blockRect.top() + cellTextOffset };
+	const QPointF pos{ blockRect.left(), blockRect.top() + cellTextOffset };
 
 	QTextLayout textLayout{ text, blockFont, p.device() };
 	textLayout.setCacheEnabled(true);
@@ -468,7 +468,7 @@ void ShellWidget::paintForegroundTextBlock(
 		auto glyphPositionList{ glyphRun.positions() };
 		int sizeGlyphRun{ glyphPositionList.size() };
 
-		const int cellWidth{ (cell.IsDoubleWidth()) ?
+		const qreal cellWidth{ (cell.IsDoubleWidth()) ?
 			m_cellSize.width() * 2 : m_cellSize.width() };
 
 		// When characters are rendered as a string, they may not be uniformly
@@ -503,10 +503,10 @@ void ShellWidget::paintForegroundTextBlock(
 		p.drawGlyphRun(pos, glyphRun);
 		glyphsRendered += sizeGlyphRun;
 
-		const QRect cursorCellRect{ neovimCursorRect() };
+		const QRectF cursorCellRect{ neovimCursorRect() };
 		paintNeovimCursorBackground(p, cursorCellRect);
 		paintNeovimCursorForeground(
-			p, cursorCellRect, glyphRun.positions().at(cursorGlyphRunPos).toPoint() + pos,
+			p, cursorCellRect, glyphRun.positions().at(cursorGlyphRunPos) + pos,
 			textGlyphRun.at(cursorGlyphRunPos));
 	}
 }
@@ -528,8 +528,8 @@ void ShellWidget::paintEvent(QPaintEvent *ev)
 
 	p.setClipping(false);
 
-	const QRect shellArea{ absoluteShellRect(0, 0, m_contents.rows(), m_contents.columns()) };
-	const QRegion margins{ QRegion(rect()).subtracted(shellArea) };
+	const QRectF shellArea{ absoluteShellRect(0, 0, m_contents.rows(), m_contents.columns()) };
+	const QRegion margins{ QRegion(rect()).subtracted(shellArea.toAlignedRect()) };
 	const QRegion marginsIntersected{ margins.intersected(ev->region()) };
 	for (auto margin{ marginsIntersected.cbegin() }; margin != marginsIntersected.cend(); margin++) {
 		p.fillRect(*margin, background());
@@ -546,7 +546,7 @@ void ShellWidget::paintEvent(QPaintEvent *ev)
 	//}
 }
 
-void ShellWidget::paintRectNoLigatures(QPainter& p, const QRect rect) noexcept
+void ShellWidget::paintRectNoLigatures(QPainter& p, const QRectF rect) noexcept
 {
 	int start_row = rect.top() / m_cellSize.height();
 	int end_row = rect.bottom() / m_cellSize.height();
@@ -567,10 +567,10 @@ void ShellWidget::paintRectNoLigatures(QPainter& p, const QRect rect) noexcept
 
 			const Cell& cell = m_contents.constValue(i,j);
 			int chars = cell.IsDoubleWidth() ? 2 : 1;
-			QRect r = absoluteShellRect(i, j, 1, chars);
-			QRect ovflw = absoluteShellRect(i, j, 1, chars + 1);
+			QRectF r = absoluteShellRect(i, j, 1, chars);
+			QRectF ovflw = absoluteShellRect(i, j, 1, chars + 1);
 
-			p.setClipRegion(ovflw);
+			p.setClipRegion(ovflw.toAlignedRect());
 
 			// Only paint bg/fg if this is not the second cell of a wide char
 			if (j <= 0 || !contents().constValue(i, j-1).IsDoubleWidth()) {
@@ -589,7 +589,7 @@ void ShellWidget::paintRectNoLigatures(QPainter& p, const QRect rect) noexcept
 	}
 }
 
-void ShellWidget::paintRectLigatures(QPainter& p, const QRect rect) noexcept
+void ShellWidget::paintRectLigatures(QPainter& p, const QRectF rect) noexcept
 {
 	int start_row = rect.top() / m_cellSize.height();
 	int end_row = rect.bottom() / m_cellSize.height();
@@ -610,7 +610,7 @@ void ShellWidget::paintRectLigatures(QPainter& p, const QRect rect) noexcept
 
 			const Cell& firstCell{ m_contents.constValue(i,j) };
 			const int chars{ firstCell.IsDoubleWidth() ? 2 : 1 };
-			const QRect firstCellRect{ absoluteShellRect(i, j, 1, chars) };
+			const QRectF firstCellRect{ absoluteShellRect(i, j, 1, chars) };
 
 			QString blockText;
 			int blockCursorPos{ -1 };
@@ -641,9 +641,9 @@ void ShellWidget::paintRectLigatures(QPainter& p, const QRect rect) noexcept
 
 			const Cell& lastCell{ m_contents.constValue(i,j) };
 			int lastCellChars = lastCell.IsDoubleWidth() ? 2 : 1;
-			QRect lastCellRect = absoluteShellRect(i, j, 1, lastCellChars);
+			QRectF lastCellRect = absoluteShellRect(i, j, 1, lastCellChars);
 
-			QRect blockRect{ firstCellRect.topLeft(), lastCellRect.bottomRight() };
+			QRectF blockRect{ firstCellRect.topLeft(), lastCellRect.bottomRight() };
 
 			paintBackgroundClearCell(p, firstCell, blockRect, false);
 			paintForegroundTextBlock(p, firstCell, blockRect, blockText, blockCursorPos);
@@ -663,8 +663,8 @@ void ShellWidget::resizeEvent(QResizeEvent *ev)
 
 QSize ShellWidget::sizeHint() const
 {
-	return QSize(m_cellSize.width()*m_contents.columns(),
-				m_cellSize.height()*m_contents.rows());
+	return QSizeF(m_cellSize.width()*m_contents.columns(),
+				m_cellSize.height()*m_contents.rows()).toSize();
 }
 
 void ShellWidget::resizeShell(int n_rows, int n_columns)
@@ -772,11 +772,11 @@ int ShellWidget::put(
 	int cols_changed = m_contents.put(text, row, column, hl_attr);
 	if (cols_changed > 0) {
 		if (isLigatureModeEnabled()) {
-			update(absoluteShellRectRow(row));
+			update(absoluteShellRectRow(row).toAlignedRect());
 		}
 		else {
-			QRect rect = absoluteShellRect(row, column, 1, cols_changed);
-			update(rect);
+			QRectF rect = absoluteShellRect(row, column, 1, cols_changed);
+			update(rect.toAlignedRect());
 		}
 	}
 	return cols_changed;
@@ -785,8 +785,8 @@ int ShellWidget::put(
 void ShellWidget::clearRow(int row)
 {
 	m_contents.clearRow(row);
-	QRect rect = absoluteShellRectRow(row);
-	update(rect);
+	QRectF rect = absoluteShellRect(row, 0, 1, m_contents.columns());
+	update(rect.toAlignedRect());
 }
 void ShellWidget::clearShell(QColor bg)
 {
@@ -799,7 +799,7 @@ void ShellWidget::clearRegion(int row0, int col0, int row1, int col1)
 {
 	m_contents.clearRegion(row0, col0, row1, col1);
 	// FIXME: check offset error
-	update(absoluteShellRect(row0, col0, row1-row0, col1-col0));
+	update(absoluteShellRect(row0, col0, row1-row0, col1-col0).toAlignedRect());
 }
 
 /// Scroll count rows (positive numbers move content up)
@@ -819,18 +819,18 @@ void ShellWidget::scrollShellRegion(int row0, int row1, int col0,
 	if (rows != 0) {
 		m_contents.scrollRegion(row0, row1, col0, col1, rows);
 		// Qt's delta uses positive numbers to move down
-		QRect r = absoluteShellRect(row0, col0, row1-row0, col1-col0);
-		scroll(0, -rows*m_cellSize.height(), r);
+		QRectF r = absoluteShellRect(row0, col0, row1-row0, col1-col0);
+		scroll(0, -rows*m_cellSize.height(), r.toAlignedRect());
 	}
 }
 
-QRect ShellWidget::absoluteShellRect(int row0, int col0, int rowcount, int colcount) const noexcept
+QRectF ShellWidget::absoluteShellRect(int row0, int col0, int rowcount, int colcount) const noexcept
 {
-	return QRect(col0*m_cellSize.width(), row0*m_cellSize.height(),
+	return QRectF(col0*m_cellSize.width(), row0*m_cellSize.height(),
 			colcount*m_cellSize.width(), rowcount*m_cellSize.height());
 }
 
-QRect ShellWidget::absoluteShellRectRow(int row) const noexcept
+QRectF ShellWidget::absoluteShellRectRow(int row) const noexcept
 {
 	return absoluteShellRect(row, 0, 1, m_contents.columns());
 }
@@ -853,11 +853,11 @@ void ShellWidget::setNeovimCursor(uint64_t row, uint64_t col) noexcept
 
 		// Ligature mode only requires clear during cursor row changes.
 		if (row != oldCursorRow) {
-			update(absoluteShellRectRow(oldCursorRow));
+			update(absoluteShellRectRow(oldCursorRow).toAlignedRect());
 		}
 	}
 	else {
-		update(neovimCursorRect());
+		update(neovimCursorRect().toAlignedRect());
 	}
 
 	// Update cursor position
@@ -865,24 +865,24 @@ void ShellWidget::setNeovimCursor(uint64_t row, uint64_t col) noexcept
 	m_cursor.ResetTimer();
 
 	// Draw cursor at new location
-	update((isLigatureModeEnabled()) ?
-		absoluteShellRectRow(row) : neovimCursorRect());
+	update(((isLigatureModeEnabled()) ?
+		absoluteShellRectRow(row) : neovimCursorRect()).toAlignedRect());
 }
 
 /// The top left corner position (pixel) for the cursor
-QPoint ShellWidget::neovimCursorTopLeft() const noexcept
+QPointF ShellWidget::neovimCursorTopLeft() const noexcept
 {
-	const QSize cSize{ cellSize() };
-	const int xPixels{ m_cursor_pos.x() * cSize.width() };
-	const int yPixels{ m_cursor_pos.y() * cSize.height() };
+	const QSizeF cSize{ cellSize() };
+	const qreal xPixels{ m_cursor_pos.x() * cSize.width() };
+	const qreal yPixels{ m_cursor_pos.y() * cSize.height() };
 
 	return { xPixels, yPixels };
 }
 
 /// Get the area filled by the cursor
-QRect ShellWidget::neovimCursorRect() const noexcept
+QRectF ShellWidget::neovimCursorRect() const noexcept
 {
-	QRect cursor{ neovimCursorTopLeft(), cellSize() };
+	QRectF cursor{ neovimCursorTopLeft(), cellSize() };
 
 	const Cell& cell{ contents().constValue(m_cursor_pos.y(), m_cursor_pos.x()) };
 	if (cell.IsDoubleWidth()) {
@@ -894,7 +894,7 @@ QRect ShellWidget::neovimCursorRect() const noexcept
 
 void ShellWidget::handleCursorChanged()
 {
-	update(neovimCursorRect());
+	update(neovimCursorRect().toAlignedRect());
 }
 
 QString ShellWidget::fontDesc() const noexcept

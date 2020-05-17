@@ -48,7 +48,7 @@ class Shell: public ShellWidget
 public:
 	Shell(NeovimConnector *nvim, ShellOptions opts, QWidget *parent=0);
 	~Shell();
-	QSize sizeIncrement() const;
+	QSizeF sizeIncrement() const;
 	virtual QVariant inputMethodQuery(Qt::InputMethodQuery) const Q_DECL_OVERRIDE;
 	bool neovimBusy() const;
 	bool neovimAttached() const;
@@ -62,8 +62,8 @@ public:
 	/// NOTE: Sums and stores partial wheel events in outparam `scrollRemainderOut`
 	static QString GetWheelEventStringAndSetScrollRemainder(
 		const QWheelEvent& ev,
-		QPoint& scrollRemainderOut,
-		QSize cellSize,
+		QPointF& scrollRemainderOut,
+		QSizeF cellSize,
 		int deltasPerStep = QWheelEvent::DefaultDeltasPerStep) noexcept;
 
 	/// Lookup highlight by name from hl_group_set
@@ -116,7 +116,7 @@ signals:
 
 public slots:
 	void handleNeovimNotification(const QByteArray &name, const QVariantList& args);
-	void resizeNeovim(const QSize&);
+	void resizeNeovim(const QSizeF&);
 	void resizeNeovim(int n_cols, int n_rows);
 	bool setGuiFont(const QString& fdesc, bool force, bool updateOption);
 	bool setGuiFontWide(const QString& fdesc) noexcept;
@@ -206,7 +206,7 @@ private:
 
 	QList<QUrl> m_deferredOpen;
 
-	QRect m_scroll_region;
+	QRectF m_scroll_region;
 	bool m_font_bold{ false };
 	bool m_font_italic{ false };
 	bool m_font_underline{ false };
@@ -229,7 +229,7 @@ private:
 	QVariantList m_modeInfo;
 
 	bool m_resizing{ false };
-	QSize m_resize_neovim_pending;
+	QSizeF m_resize_neovim_pending;
 	QLabel* m_tooltip{ nullptr };
 	QPoint m_mouse_pos;
 	// 2/3/4 mouse click tracking
@@ -237,7 +237,7 @@ private:
 	uint8_t m_mouseclick_count{ 0 };
 	Qt::MouseButton m_mouseclick_pending;
 	// Accumulates remainder of steppy scroll
-	QPoint m_scrollDeltaRemainder;
+	QPointF m_scrollDeltaRemainder;
 
 	// Properties
 	bool m_neovimBusy{ false };

@@ -13,7 +13,7 @@ class ShellWidget: public QWidget
 	Q_PROPERTY(QColor foreground READ foreground WRITE setForeground)
 	Q_PROPERTY(int rows READ rows)
 	Q_PROPERTY(int columns READ columns)
-	Q_PROPERTY(QSize cellSize READ cellSize)
+	Q_PROPERTY(QSizeF cellSize READ cellSize)
 	Q_PROPERTY(bool ligatureMode MEMBER m_isLigatureModeEnabled READ isLigatureModeEnabled WRITE setLigatureMode)
 public:
 	ShellWidget(QWidget *parent=0);
@@ -36,7 +36,7 @@ public:
 
 	int rows() const;
 	int columns() const;
-	QSize cellSize() const;
+	QSizeF cellSize() const;
 	const ShellContents& contents() const;
 	QSize sizeHint() const Q_DECL_OVERRIDE;
 
@@ -122,16 +122,16 @@ public slots:
 	void setLineSpace(int height);
 protected:
 	/// Cursor position in shell coordinates
-	QPoint m_cursor_pos;
+	QPointF m_cursor_pos;
 
 	/// Abstraction for guicursor options and styles
 	Cursor m_cursor;
 
 	/// The top left corner position (pixel) for the cursor
-	QPoint neovimCursorTopLeft() const noexcept;
+	QPointF neovimCursorTopLeft() const noexcept;
 
 	/// Get the area filled by the cursor
-	QRect neovimCursorRect() const noexcept;
+	QRectF neovimCursorRect() const noexcept;
 
 	std::vector<QFont> m_guifontwidelist;
 
@@ -147,10 +147,10 @@ protected:
 	/// Converts an area in row/col coordinates into pixel coordinates.
 	///
 	/// (row0, col0) is the start position and rowcount/colcount the size
-	QRect absoluteShellRect(int row0, int col0, int rowcount, int colcount) const noexcept;
+	QRectF absoluteShellRect(int row0, int col0, int rowcount, int colcount) const noexcept;
 
 	/// Computes the entire row position and size in pixel coordinates.
-	QRect absoluteShellRectRow(int row) const noexcept;
+	QRectF absoluteShellRectRow(int row) const noexcept;
 
 	void setGuiFontList(const std::vector<QFont>&& fontList) noexcept
 	{
@@ -160,27 +160,27 @@ protected:
 private:
 	void setFont(const QFont&);
 	void handleCursorChanged();
-	QRect getNeovimCursorRect(QRect cellRect) noexcept;
-	void paintRectLigatures(QPainter& p, QRect rect) noexcept;
-	void paintRectNoLigatures(QPainter& p, QRect rect) noexcept;
-	void paintNeovimCursorBackground(QPainter& p, QRect cellRect) noexcept;
-	void paintNeovimCursorForeground(QPainter& p, QRect cellRect, QPoint pos, const QString& character) noexcept;
-	void paintUnderline(QPainter& p, const Cell& cell, QRect cellRect) noexcept;
-	void paintUndercurl(QPainter& p, const Cell& cell, QRect cellRect) noexcept;
-	void paintBackgroundClearCell(QPainter& p, const Cell& cell, QRect cellRect, bool isCursorCell) noexcept;
-	void paintForegroundCellText(QPainter& p, const Cell& cell, QRect cellRect, bool isCursorCell) noexcept;
+	QRectF getNeovimCursorRect(QRectF cellRect) noexcept;
+	void paintRectLigatures(QPainter& p, QRectF rect) noexcept;
+	void paintRectNoLigatures(QPainter& p, QRectF rect) noexcept;
+	void paintNeovimCursorBackground(QPainter& p, QRectF cellRect) noexcept;
+	void paintNeovimCursorForeground(QPainter& p, QRectF cellRect, QPointF pos, const QString& character) noexcept;
+	void paintUnderline(QPainter& p, const Cell& cell, QRectF cellRect) noexcept;
+	void paintUndercurl(QPainter& p, const Cell& cell, QRectF cellRect) noexcept;
+	void paintBackgroundClearCell(QPainter& p, const Cell& cell, QRectF cellRect, bool isCursorCell) noexcept;
+	void paintForegroundCellText(QPainter& p, const Cell& cell, QRectF cellRect, bool isCursorCell) noexcept;
 
 	void paintForegroundTextBlock(
 		QPainter& p,
 		const Cell& cell,
-		QRect blockRect,
+		QRectF blockRect,
 		const QString& text,
 		int cursorPos) noexcept;
 
 	QFont GetCellFont(const Cell& cell) const noexcept;
 
 	ShellContents m_contents{ 0, 0 };
-	QSize m_cellSize;
+	QSizeF m_cellSize;
 	int m_ascent;
 	QColor m_bgColor{ Qt::white };
 	QColor m_fgColor{ Qt::black };

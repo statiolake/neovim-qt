@@ -3,7 +3,7 @@
 #include <QEvent>
 #include <QKeyEvent>
 #include <QMap>
-#include <QPoint>
+#include <QPointF>
 #include <QString>
 
 namespace NeovimQt { namespace Input {

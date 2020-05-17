@@ -222,7 +222,7 @@ void Shell::init()
 	connect(m_nvim->api0(), &NeovimApi0::on_ui_try_resize,
 			this, &Shell::neovimResizeFinished);
 
-	QRect screenRect = QApplication::desktop()->availableGeometry(this);
+	QRectF screenRect = QApplication::desktop()->availableGeometry(this);
 	int64_t width = screenRect.width()*0.66/cellSize().width();
 	int64_t height = screenRect.height()*0.66/cellSize().height();
 	QVariantMap options;
@@ -277,9 +277,9 @@ void Shell::neovimExited(int status)
 /// - reset the cursor, scroll_region
 void Shell::handleResize(uint64_t n_cols, uint64_t n_rows)
 {
-	m_cursor_pos = QPoint(0,0);
+	m_cursor_pos = QPointF(0,0);
 	resizeShell(n_rows, n_cols);
-	m_scroll_region = QRect(QPoint(0,0), QPoint(n_cols, n_rows));
+	m_scroll_region = QRectF(QPointF(0,0), QPointF(n_cols, n_rows));
 	if (isWindow()) {
 		// Never call resize on a maximized window
 		// QTBUG-45806
@@ -368,7 +368,7 @@ void Shell::handleScroll(const QVariantList& args)
 
 	if (m_scroll_region.contains(m_cursor_pos)) {
 		// Schedule cursor region to be repainted
-		update(neovimCursorRect());
+		update(neovimCursorRect().toAlignedRect());
 	}
 
 	scrollShellRegion(m_scroll_region.top(), m_scroll_region.bottom(),
@@ -389,8 +389,8 @@ void Shell::handleSetScrollRegion(const QVariantList& opargs)
 	left = opargs.at(2).toULongLong();
 	right = opargs.at(3).toULongLong();
 
-	m_scroll_region = QRect(QPoint(left, top),
-				QPoint(right+1, bot+1));
+	m_scroll_region = QRectF(QPointF(left, top),
+				QPointF(right+1, bot+1));
 }
 
 void Shell::handleRedraw(const QByteArray& name, const QVariantList& opargs)
@@ -635,7 +635,7 @@ void Shell::handleModeChange(const QVariantList& opargs)
 			m_cursor.SetTimer(0, 0, 0);
 		}
 
-		update(neovimCursorRect());
+		update(neovimCursorRect().toAlignedRect());
 		return;
 	}
 
@@ -698,7 +698,7 @@ void Shell::handleModeChange(const QVariantList& opargs)
 	m_cursor.SetStyle(cursorShape, cellPercentage);
 	m_cursor.SetTimer(blinkWaitTime, blinkOnTime, blinkOffTime);
 
-	update(neovimCursorRect());
+	update(neovimCursorRect().toAlignedRect());
 }
 
 void Shell::handleModeInfoSet(const QVariantList& opargs)
@@ -732,7 +732,7 @@ void Shell::handleBusy(bool busy)
 	m_cursor.SetIsBusy(busy);
 
 	if (busy != m_neovimBusy) {
-		update(neovimCursorRect());
+		update(neovimCursorRect().toAlignedRect());
 	}
 
 	m_neovimBusy = busy;
@@ -1126,18 +1126,18 @@ void Shell::handleGridScroll(const QVariantList& opargs)
 	const uint64_t right{ opargs.at(4).toULongLong() };
 	const int64_t rows{ opargs.at(5).toLongLong() };
 
-	m_scroll_region = QRect(QPoint(left, top), QPoint(right, bot));
+	m_scroll_region = QRectF(QPointF(left, top), QPointF(right, bot));
 
 	// Remove old cursor
 	if (m_scroll_region.contains(m_cursor_pos)) {
-		update(neovimCursorRect());
+		update(neovimCursorRect().toAlignedRect());
 	}
 
 	scrollShellRegion(m_scroll_region.top(), m_scroll_region.bottom(),
 		m_scroll_region.left(), m_scroll_region.right(), rows);
 
 	// Draw new cursor
-	update(neovimCursorRect());
+	update(neovimCursorRect().toAlignedRect());
 }
 
 void Shell::handleGuiAdaptiveColor(const QVariantList& opargs) noexcept
@@ -1228,8 +1228,8 @@ void Shell::neovimMouseEvent(QMouseEvent *ev)
 		return;
 	}
 
-	QPoint pos(ev->x()/cellSize().width(),
-			ev->y()/cellSize().height());
+	QPoint pos(static_cast<int>(ev->x()/cellSize().width()),
+			static_cast<int>(ev->y()/cellSize().height()));
 	QString inp;
 	if (ev->type() == QEvent::MouseMove) {
 		Qt::MouseButton bt;
@@ -1293,8 +1293,8 @@ void Shell::mouseMoveEvent(QMouseEvent *ev)
 {
 	setCursorFromBusyState();
 
-	QPoint pos(ev->x()/cellSize().width(),
-			ev->y()/cellSize().height());
+	QPoint pos(static_cast<int>(ev->x()/cellSize().width()),
+			static_cast<int>(ev->y()/cellSize().height()));
 	if (pos != m_mouse_pos) {
 		m_mouse_pos = pos;
 		mouseClickReset();
@@ -1333,13 +1333,14 @@ void Shell::wheelEvent(QWheelEvent *ev)
 
 /*static*/ QString Shell::GetWheelEventStringAndSetScrollRemainder(
 	const QWheelEvent& ev,
-	QPoint& scrollRemainderOut,
-	QSize cellSize,
+	QPointF& scrollRemainderOut,
+	QSizeF cellSize,
 	int deltasPerStep) noexcept
 {
 	int invertConstant{ (ev.inverted()) ? -1 : 1 };
 
-	QPoint scrollRemainderAndEvent { (ev.angleDelta() * invertConstant) + scrollRemainderOut };
+	QPoint scrollRemainderAndEvent {
+		((ev.angleDelta() * invertConstant) + scrollRemainderOut).toPoint() };
 
 	scrollRemainderOut.rx() = scrollRemainderAndEvent.x() % deltasPerStep;
 	scrollRemainderOut.ry() = scrollRemainderAndEvent.y() % deltasPerStep;
@@ -1356,12 +1357,12 @@ void Shell::wheelEvent(QWheelEvent *ev)
 
 // TODO Issue#751:  Remove Deprecated code, keep #else below
 #if (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
-	const QPoint evPos{ ev.x(), ev.y() };
+	const QPointF evPos{ static_cast<qreal>(ev.x()), static_cast<qreal>(ev.y()) };
 #else
-	const QPoint evPos{ ev.position().toPoint() };
+	const QPointF evPos{ ev.position() };
 #endif
 
-	QPoint evCellPos{ evPos.x() / cellSize.width(), evPos.y() / cellSize.height() };
+	QPointF evCellPos{ evPos.x() / cellSize.width(), evPos.y() / cellSize.height() };
 
 	QString wheelEventString;
 	if (scrollRemainderAndEvent.y() > 0) {
@@ -1430,7 +1431,7 @@ bool Shell::event(QEvent *event)
 ///
 /// The given size is rounded down to the nearest
 /// row/column count.
-void Shell::resizeNeovim(const QSize& newSize)
+void Shell::resizeNeovim(const QSizeF& newSize)
 {
 	int n_cols = newSize.width()/cellSize().width();
 	int n_rows = newSize.height()/cellSize().height();
@@ -1448,7 +1449,7 @@ void Shell::resizeNeovim(int n_cols, int n_rows)
 		return;
 	}
 	if (m_resizing) {
-		m_resize_neovim_pending = QSize(n_cols, n_rows);
+		m_resize_neovim_pending = QSizeF(n_cols, n_rows);
 	} else {
 		m_nvim->api0()->ui_try_resize(n_cols, n_rows);
 		m_resizing = true;
@@ -1475,7 +1476,7 @@ void Shell::neovimResizeFinished()
 	if (m_resize_neovim_pending.isValid()) {
 		resizeNeovim(m_resize_neovim_pending.width(),
 				m_resize_neovim_pending.height());
-		m_resize_neovim_pending = QSize();
+		m_resize_neovim_pending = QSizeF();
 	}
 }
 
@@ -1556,7 +1557,7 @@ void Shell::tooltip(const QString& text)
 
 	if ( !m_tooltip->isVisible() ) {
 		m_tooltip->setMinimumHeight(cellSize().height());
-		m_tooltip->move(neovimCursorTopLeft() );
+		m_tooltip->move(neovimCursorTopLeft().toPoint());
 		m_tooltip->show();
 	}
 
@@ -1584,7 +1585,7 @@ QVariant Shell::inputMethodQuery(Qt::InputMethodQuery query) const
 	if ( query == Qt::ImFont) {
 		return font();
 	} else if ( query == Qt::ImMicroFocus || query == Qt::ImCursorRectangle ) {
-		return QRect(neovimCursorTopLeft(), cellSize());
+		return QRectF(neovimCursorTopLeft(), cellSize());
 	}
 
 	return QVariant();
