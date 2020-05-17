@@ -102,7 +102,7 @@ void ShellWidget::setCellSize()
 {
 	QFontMetrics fm(font());
 	m_ascent = fm.ascent();
-	m_cellSize = QSizeF(fm.width('W'),
+	m_cellSize = QSizeF(fm.width('W') - 0.5,
 			qMax(fm.lineSpacing(), fm.height()) + m_lineSpace);
 	// setSizeIncrement(m_cellSize);
 }
