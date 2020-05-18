@@ -33,7 +33,7 @@ QString convertMouse(
 	Qt::MouseButton bt,
 	QEvent::Type type,
 	Qt::KeyboardModifiers mod,
-	QPointF pos,
+	QPoint pos,
 	uint8_t clicksCount) noexcept;
 
 /// Platform specific Qt key modifier bitmask for 'Control'.

@@ -185,7 +185,7 @@ private:
 	bool m_resizing{ false };
 	QSizeF m_resize_neovim_pending;
 	QLabel* m_tooltip{ nullptr };
-	QPointF m_mouse_pos;
+	QPoint m_mouse_pos;
 	// 2/3/4 mouse click tracking
 	QTimer m_mouseclick_timer;
 	uint8_t m_mouseclick_count{ 0 };
