@@ -160,22 +160,23 @@ protected:
 private:
 	void setFont(const QFont&);
 	void handleCursorChanged();
-	QRectF getNeovimCursorRect(QRectF cellRect) noexcept;
+	QRectF getNeovimCursorRect(QRectF cellRect, int numChars) noexcept;
 	void paintRectLigatures(QPainter& p, QRectF rect) noexcept;
 	void paintRectNoLigatures(QPainter& p, QRectF rect) noexcept;
-	void paintNeovimCursorBackground(QPainter& p, QRectF cellRect) noexcept;
-	void paintNeovimCursorForeground(QPainter& p, QRectF cellRect, QPointF pos, const QString& character) noexcept;
+	void paintNeovimCursorBackground(QPainter& p, QRectF cellRect, int numChars) noexcept;
+	void paintNeovimCursorForeground(QPainter& p, QRectF cellRect, QPointF pos, const QString& character, int numChars) noexcept;
 	void paintUnderline(QPainter& p, const Cell& cell, QRectF cellRect) noexcept;
 	void paintUndercurl(QPainter& p, const Cell& cell, QRectF cellRect) noexcept;
-	void paintBackgroundClearCell(QPainter& p, const Cell& cell, QRectF cellRect, bool isCursorCell) noexcept;
-	void paintForegroundCellText(QPainter& p, const Cell& cell, QRectF cellRect, bool isCursorCell) noexcept;
+	void paintBackgroundClearCell(QPainter& p, const Cell& cell, QRectF cellRect, bool isCursorCell, int numChars) noexcept;
+	void paintForegroundCellText(QPainter& p, const Cell& cell, QRectF cellRect, bool isCursorCell, int numChars) noexcept;
 
 	void paintForegroundTextBlock(
 		QPainter& p,
 		const Cell& cell,
 		QRectF blockRect,
 		const QString& text,
-		int cursorPos) noexcept;
+		int cursorPos,
+		int numChars) noexcept;
 
 	QFont GetCellFont(const Cell& cell) const noexcept;
 

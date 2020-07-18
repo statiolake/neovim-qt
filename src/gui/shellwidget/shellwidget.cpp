@@ -114,7 +114,7 @@ QSizeF ShellWidget::cellSize() const
 	return m_cellSize;
 }
 
-QRectF ShellWidget::getNeovimCursorRect(QRectF cellRect) noexcept
+QRectF ShellWidget::getNeovimCursorRect(QRectF cellRect, int numChars) noexcept
 {
 	QRectF cursorRect{ cellRect };
 	switch (m_cursor.GetShape())
@@ -133,7 +133,11 @@ QRectF ShellWidget::getNeovimCursorRect(QRectF cellRect) noexcept
 
 		case Cursor::Shape::Vertical:
 		{
-			cursorRect.setWidth(cursorRect.width() * m_cursor.GetPercentage() / 100);
+			// Needs to be divided by num of characters, since the width of
+			// vertical bar should be the same regardless of the character
+			// width under the cursor.  This matters if we want to insert
+			// characters before the double-width character.
+			cursorRect.setWidth((cursorRect.width() / numChars) * m_cursor.GetPercentage() / 100);
 		}
 		break;
 	}
@@ -141,9 +145,9 @@ QRectF ShellWidget::getNeovimCursorRect(QRectF cellRect) noexcept
 	return cursorRect;
 }
 
-void ShellWidget::paintNeovimCursorBackground(QPainter& p, QRectF cellRect) noexcept
+void ShellWidget::paintNeovimCursorBackground(QPainter& p, QRectF cellRect, int numChars) noexcept
 {
-	const QRectF cursorRect{ getNeovimCursorRect(cellRect) };
+	const QRectF cursorRect{ getNeovimCursorRect(cellRect, numChars) };
 
 	QColor cursorBackgroundColor{ m_cursor.GetBackgroundColor() };
 	if (!cursorBackgroundColor.isValid()) {
@@ -172,14 +176,15 @@ void ShellWidget::paintNeovimCursorForeground(
 	QPainter& p,
 	QRectF cellRect,
 	QPointF pos,
-	const QString& character) noexcept
+	const QString& character,
+	int numChars) noexcept
 {
 	// No focus: cursor is outline with default foreground color.
 	if (!hasFocus()) {
 		return;
 	}
 
-	const QRectF cursorRect{ getNeovimCursorRect(cellRect) };
+	const QRectF cursorRect{ getNeovimCursorRect(cellRect, numChars) };
 
 	QColor cursorForegroundColor{ m_cursor.GetForegroundColor() };
 	if (!cursorForegroundColor.isValid()) {
@@ -280,7 +285,8 @@ void ShellWidget::paintBackgroundClearCell(
 	QPainter& p,
 	const Cell& cell,
 	QRectF cellRect,
-	bool isCursorCell) noexcept
+	bool isCursorCell,
+	int numChars) noexcept
 {
 	QColor bgColor{ cell.GetBackgroundColor() };
 	if (!bgColor.isValid()) {
@@ -290,7 +296,7 @@ void ShellWidget::paintBackgroundClearCell(
 	p.fillRect(cellRect, bgColor);
 
 	if (isCursorCell) {
-		paintNeovimCursorBackground(p, cellRect);
+		paintNeovimCursorBackground(p, cellRect, numChars);
 		return;
 	}
 }
@@ -334,7 +340,8 @@ void ShellWidget::paintForegroundCellText(
 	QPainter& p,
 	const Cell& cell,
 	QRectF cellRect,
-	bool isCursorCell) noexcept
+	bool isCursorCell,
+	int numChars) noexcept
 {
 	if (cell.GetCharacter() == ' ') {
 		return;
@@ -356,7 +363,7 @@ void ShellWidget::paintForegroundCellText(
 	p.drawText(pos, text);
 
 	if (isCursorCell) {
-		paintNeovimCursorForeground(p, cellRect, pos, text);
+		paintNeovimCursorForeground(p, cellRect, pos, text, numChars);
 	}
 }
 
@@ -438,7 +445,8 @@ void ShellWidget::paintForegroundTextBlock(
 	const Cell& cell,
 	QRectF blockRect,
 	const QString& text,
-	int cursorPos) noexcept
+	int cursorPos,
+	int numChars) noexcept
 {
 	QColor fgColor{ cell.GetForegroundColor() };
 	if (!fgColor.isValid()) {
@@ -504,10 +512,10 @@ void ShellWidget::paintForegroundTextBlock(
 		glyphsRendered += sizeGlyphRun;
 
 		const QRectF cursorCellRect{ neovimCursorRect() };
-		paintNeovimCursorBackground(p, cursorCellRect);
+		paintNeovimCursorBackground(p, cursorCellRect, numChars);
 		paintNeovimCursorForeground(
 			p, cursorCellRect, glyphRun.positions().at(cursorGlyphRunPos) + pos,
-			textGlyphRun.at(cursorGlyphRunPos));
+			textGlyphRun.at(cursorGlyphRunPos), numChars);
 	}
 }
 
@@ -578,8 +586,8 @@ void ShellWidget::paintRectNoLigatures(QPainter& p, const QRectF rect) noexcept
 				const QPoint curPos{ j, i };
 				const bool isCursorVisibleAtCell{ m_cursor.IsVisible() && m_cursor_pos == curPos };
 
-				paintBackgroundClearCell(p, cell, r, isCursorVisibleAtCell);
-				paintForegroundCellText(p, cell, r, isCursorVisibleAtCell);
+				paintBackgroundClearCell(p, cell, r, isCursorVisibleAtCell, chars);
+				paintForegroundCellText(p, cell, r, isCursorVisibleAtCell, chars);
 			}
 
 			paintUnderline(p, cell, r);
@@ -645,8 +653,8 @@ void ShellWidget::paintRectLigatures(QPainter& p, const QRectF rect) noexcept
 
 			QRectF blockRect{ firstCellRect.topLeft(), lastCellRect.bottomRight() };
 
-			paintBackgroundClearCell(p, firstCell, blockRect, false);
-			paintForegroundTextBlock(p, firstCell, blockRect, blockText, blockCursorPos);
+			paintBackgroundClearCell(p, firstCell, blockRect, false, chars);
+			paintForegroundTextBlock(p, firstCell, blockRect, blockText, blockCursorPos, chars);
 			paintUnderline(p, firstCell, blockRect);
 			paintUndercurl(p, firstCell, blockRect);
 		}
