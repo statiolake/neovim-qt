@@ -166,7 +166,7 @@ private:
 	void paintNeovimCursorBackground(QPainter& p, QRectF cellRect) noexcept;
 	void paintNeovimCursorForeground(QPainter& p, QRectF cellRect, QPointF pos, const QString& character) noexcept;
 	void paintUnderline(QPainter& p, const Cell& cell, QRectF cellRect) noexcept;
-	void paintUndercurl(QPainter& p, const Cell& cell, QRectF cellRect) noexcept;
+	void paintUndercurl(QPainter& p, const Cell& cell, QRectF cellRect, int numChars) noexcept;
 	void paintBackgroundClearCell(QPainter& p, const Cell& cell, QRectF cellRect, bool isCursorCell) noexcept;
 	void paintForegroundCellText(QPainter& p, const Cell& cell, QRectF cellRect, bool isCursorCell) noexcept;
 

@@ -5,6 +5,7 @@
 #include <QPainterPath>
 #include <QPaintEvent>
 #include <QTextLayout>
+#include <QtMath>
 
 #include "helpers.h"
 
@@ -236,16 +237,22 @@ void ShellWidget::paintUnderline(
 	p.drawLine(GetUnderline(cellRect));
 }
 
-static QPainterPath GetUndercurlPath(QRectF cellRect) noexcept
+static QPainterPath GetUndercurlPath(QRectF cellRect, int numChars) noexcept
 {
-	const QLineF underline{ GetUnderline(cellRect) };
-	const QPointF& start{ underline.p1() };
-	const QPointF& end{ underline.p2() };
+	static constexpr qreal curlHeight = 2.0;
+	int constexpr resolution = 4;
 
-	QPainterPath path(start);
-	static constexpr int offset[8]{ 1, 0, 0, 1, 1, 2, 2, 2 };
-	for (int i = start.x() + 1; i <= end.x(); i++) {
-		path.lineTo(QPointF(i, start.y() - offset[i%8]));
+	qreal start = cellRect.left();
+	qreal end = cellRect.right();
+	qreal baseline = cellRect.bottom() - curlHeight;
+	qreal singleWidth = cellRect.width() / static_cast<qreal>(numChars);
+
+	QPainterPath path({start, baseline - curlHeight});
+	for (int i = 1; i <= resolution * numChars; i++) {
+		qreal fi = static_cast<qreal>(i) / resolution;
+		qreal x = start + fi * singleWidth;
+		qreal y = baseline - (qSin(fi * 2.0 * M_PI) + 1) * curlHeight;
+		path.lineTo({x, y});
 	}
 
 	return path;
@@ -254,7 +261,8 @@ static QPainterPath GetUndercurlPath(QRectF cellRect) noexcept
 void ShellWidget::paintUndercurl(
 	QPainter& p,
 	const Cell& cell,
-	QRectF cellRect) noexcept
+	QRectF cellRect,
+	int numChars) noexcept
 {
 	if (!cell.IsUndercurl()) {
 		return;
@@ -273,7 +281,7 @@ void ShellWidget::paintUndercurl(
 
 	p.setPen(pen);
 
-	p.drawPath(GetUndercurlPath(cellRect));
+	p.drawPath(GetUndercurlPath(cellRect, numChars));
 }
 
 void ShellWidget::paintBackgroundClearCell(
@@ -584,7 +592,7 @@ void ShellWidget::paintRectNoLigatures(QPainter& p, const QRectF rect) noexcept
 
 			paintUnderline(p, cell, r);
 
-			paintUndercurl(p, cell, r);
+			paintUndercurl(p, cell, r, chars);
 		}
 	}
 }
@@ -648,7 +656,7 @@ void ShellWidget::paintRectLigatures(QPainter& p, const QRectF rect) noexcept
 			paintBackgroundClearCell(p, firstCell, blockRect, false);
 			paintForegroundTextBlock(p, firstCell, blockRect, blockText, blockCursorPos);
 			paintUnderline(p, firstCell, blockRect);
-			paintUndercurl(p, firstCell, blockRect);
+			paintUndercurl(p, firstCell, blockRect, chars);
 		}
 	}
 }
